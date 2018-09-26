@@ -20,9 +20,9 @@ start, goal = {"x": 0, "y":0}, {"x": 0, "y":0}
 
 # Intalize the Matrix!
 board_matrix = []
-
+cost = False
 # Add source file with -s or --source flags and transform it into a 2D array
-if argv[1] == "--source" or argv[1] == "-s":
+if len(argv) >= 2 and argv[1] == "--source" or argv[1] == "-s":
     file = open(argv[2])
     for line in file:
         row = []
@@ -34,6 +34,9 @@ if argv[1] == "--source" or argv[1] == "-s":
     file.close()
 else:
     print("Please define the source file with the --source or -s flag")
+if len(argv) >= 4:
+    if argv[3] == "--cost" or argv[3] == "-c":
+        cost = True
 
 # Petter make the matrix with the red pill, Balazs want it with the blue so we flip it. First column board[x] is horizontal and board[1][x] is not vertical now.
 board_matrix = np.transpose(board_matrix)
@@ -87,7 +90,7 @@ def findType(element):
         return Type.road
     elif element == "m":
         return Type.mountain
-    elif element == "forest":
+    elif element == "f":
         return Type.forest
     elif element == "g":
         return Type.grassland
@@ -147,18 +150,29 @@ def printBoard(board):
         printBlock(str(y))
         for node in line:
             if node.isPath:
-                printBlock("🛣")
+                printBlock("👠")
             elif node.isChecked:
                 printBlock("❔")
-            elif node.type.value == -2:
-                printBlock("🚩")
             elif node.type.value == -3:
                 printBlock("🏁")
+            elif node.type.value == -2:
+                printBlock("🚩")
             elif node.type.value == -1:
                 printBlock("🚧")
+            elif node.type.value == 100:
+                printBlock("🌊")
+            elif node.type.value == 50:
+                printBlock("⛰")
+            elif node.type.value == 10:
+                printBlock("🌳")
+            elif node.type.value == 5:
+                printBlock("🌱")
+            elif node.type.value == 1:
+                printBlock("🛤")
             elif node.type.value == 0:
                 printBlock("o")
             else:
+                print(node.type.value)
                 printBlock(node)
         print("")
         y+=1
@@ -178,7 +192,7 @@ start_node.f = heuristic(start_node, goal_node)
 
 
 # A* per se
-def A_star(start_node, goal_node, cost=False):
+def A_star(start_node, goal_node, cost, dijkstra):
     
     # Start with the start node in the openSet        
     openSet = [start_node]
@@ -195,31 +209,41 @@ def A_star(start_node, goal_node, cost=False):
         if current == goal_node:
             path = "end"
             node = goal_node.prev
+            # Uncomment to show checked nodes
+            # for node in closeSet:
+            #     node.isChecked = True
+            pathCost = 0
             while node.prev is not None:
                 node.isPath = True
+                pathCost += node.type.value
                 node = node.prev
 
-            print("DONE!\n")
+            print("DONE! Cost was: "+ str(pathCost) + "\n")
             return  printBoard(board)
 
         
         # Find every friendly neighbor for this node
         for neighbor in current.neighbors:
             neighbor = current.neighbors[neighbor]
-            tempG = current.g + heuristic(current, neighbor)
-            # If the neighbor is allready considered dont do it again
+            if cost:
+                tempG = current.g + neighbor.type.value
+            elif dijkstra:
+                pass                
+            else:
+                neighbor.f = neighbor.g
+            # If the neighbor is already considered don't do it again
             if neighbor in closeSet:
                 continue
-            # If not to it and only if this is not a wall!
+            # If not, do it and only if this is not a wall!
             if neighbor not in openSet and neighbor.type.value != -1:
                 openSet.append(neighbor)
             elif tempG >= neighbor.g:
                 continue
-            # Saves the path we go
+            # Save the path we go
             neighbor.prev = current
             # Update heurisitc, not needed to save it, but nice to have
             neighbor.h = heuristic(neighbor, goal_node)
-            # Saves the temp gScore
+            # Save the temp gScore
             neighbor.g = tempG
             # Calculate the fScore and save it.
             if cost:                            
@@ -235,6 +259,5 @@ def A_star(start_node, goal_node, cost=False):
         print("No solution on this board! '❔' means the area was checked")
         return printBoard(board)
 
-
 # Call A*
-A_star(start_node, goal_node)
+A_star(start_node, goal_node, cost, False)
