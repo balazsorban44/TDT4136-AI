@@ -21,22 +21,32 @@ start, goal = {"x": 0, "y":0}, {"x": 0, "y":0}
 # Intalize the Matrix!
 board_matrix = []
 cost = False
+dijkstra = False
+bfs = False
+
 # Add source file with -s or --source flags and transform it into a 2D array
-if len(argv) >= 2 and argv[1] == "--source" or argv[1] == "-s":
+if  "--source" in argv or "-s" in argv:
     file = open(argv[2])
     for line in file:
         row = []
         for x in line:
-            
+
             if x != "\n":
                 row.append(x)
         board_matrix.append(row)
     file.close()
 else:
     print("Please define the source file with the --source or -s flag")
-if len(argv) >= 4:
-    if argv[3] == "--cost" or argv[3] == "-c":
+
+# Choose mode with the --mode or -m flags.
+# Possible values are nothing, with cost, or dijkstra
+if "--mode" in argv or "-m" in argv:
+    if "cost" in argv:
         cost = True
+    if "bfs" in argv:
+        bfs = True
+    elif "dijkstra" in argv:
+        dijkstra = True
 
 # Petter make the matrix with the red pill, Balazs want it with the blue so we flip it. First column board[x] is horizontal and board[1][x] is not vertical now.
 board_matrix = np.transpose(board_matrix)
@@ -55,7 +65,7 @@ class Type(Enum):
     error = -10
 
 
-# Node class containing the coordinates, its type, 
+# Node class containing the coordinates, its type,
 # if the Node was visited, or if it is part of the final path.
 # Also fScore, gScore, hScore
 class Node:
@@ -75,7 +85,7 @@ class Node:
     # Make it so that you can print a node
     def __str__(self):
         return printBlock(str(self.type.value))
-        
+
     # Make it so that you can compare two nodes
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
@@ -114,10 +124,10 @@ def createBoard(board_matrix):
         for element in lines:
             y = y + 1
             if element == "A":
-                start["x"] = x 
+                start["x"] = x
                 start["y"] = y
             if element == "B":
-                goal["x"] = x 
+                goal["x"] = x
                 goal["y"] = y
             node = Node(x,y, findType(element))
             row.append(node)
@@ -187,31 +197,51 @@ start_node = board[start["x"]][start["y"]]
 # Saves the goal_node as a global node
 goal_node = board[goal["x"]][goal["y"]]
 
-# Must intelize the first heuristics between the start and end node
+# Must intialize the first heuristics between the start and end node
 start_node.f = heuristic(start_node, goal_node)
 
 
+def get_lowest_g_node(input_list):
+    # Sorting for dijkstra.
+    cur_min = None
+    cur_min_g = 2**10000
+    for node in input_list:
+        if node.g < cur_min_g:
+            cur_min_g = node.g
+            cur_min = node
+    return cur_min
+
+
 # A* per se
-def A_star(start_node, goal_node, cost, dijkstra):
-    
-    # Start with the start node in the openSet        
+def A_star(start_node, goal_node):
+
+    # Start with the start node in the openSet
     openSet = [start_node]
-    # Intelize the closeSet 
+    # Intialize the closeSet
     closeSet = []
 
     # Run as long we have something in the openSet to check
     while len(openSet) is not 0:
         # Sorts the openSet so we always have the node with lowest fscore first so pop works
-        openSet.sort(key=lambda node : node.f, reverse=True)
-        current = openSet.pop()
+        if cost:
+            openSet.sort(key=lambda node : node.f, reverse=True)
+            current = openSet.pop()
+        elif dijkstra:
+            openSet.sort(key=lambda node : node.g, reverse=True)
+            current = openSet.pop()
+        elif bfs:
+            current = openSet.pop()
+        else:
+            openSet.sort(key=lambda node : node.f, reverse=True)
+            current = openSet.pop()
         closeSet.append(current)
         # The A* algorithm reached the 🏁
         if current == goal_node:
             path = "end"
             node = goal_node.prev
             # Uncomment to show checked nodes
-            # for node in closeSet:
-            #     node.isChecked = True
+            for node in closeSet:
+                node.isChecked = True
             pathCost = 0
             while node.prev is not None:
                 node.isPath = True
@@ -221,22 +251,26 @@ def A_star(start_node, goal_node, cost, dijkstra):
             print("DONE! Cost was: "+ str(pathCost) + "\n")
             return  printBoard(board)
 
-        
+
         # Find every friendly neighbor for this node
         for neighbor in current.neighbors:
             neighbor = current.neighbors[neighbor]
-            if cost:
+
+            if cost or dijkstra:
                 tempG = current.g + neighbor.type.value
-            elif dijkstra:
-                pass                
+
             else:
+                tempG = current.g
                 neighbor.f = neighbor.g
             # If the neighbor is already considered don't do it again
             if neighbor in closeSet:
                 continue
             # If not, do it and only if this is not a wall!
             if neighbor not in openSet and neighbor.type.value != -1:
-                openSet.append(neighbor)
+                if bfs:
+                    openSet.insert(0, neighbor)
+                else:
+                    openSet.append(neighbor)
             elif tempG >= neighbor.g:
                 continue
             # Save the path we go
@@ -246,11 +280,11 @@ def A_star(start_node, goal_node, cost, dijkstra):
             # Save the temp gScore
             neighbor.g = tempG
             # Calculate the fScore and save it.
-            if cost:                            
-                neighbor.f = neighbor.g + neighbor.h + neighbor.type.value
+            if cost:
+                neighbor.f = current.g + neighbor.h + neighbor.type.value
             else:
-                neighbor.f = neighbor.g + neighbor.h
-                                
+                neighbor.f = current.g + neighbor.h
+
     # The A* algorithm did not find a solution from 🚩 to 🏁
     else:
         for node in closeSet:
@@ -259,5 +293,10 @@ def A_star(start_node, goal_node, cost, dijkstra):
         print("No solution on this board! '❔' means the area was checked")
         return printBoard(board)
 
-# Call A*
-A_star(start_node, goal_node, cost, False)
+
+
+
+
+
+A_star(start_node, goal_node)
+
