@@ -4,6 +4,15 @@ from sys import argv
 import numpy as np
 from math import sqrt
 
+
+def heuristic(a, b):
+    x_diff = abs(a.x - b.x)
+    y_diff = abs(a.y - b.y)
+    return x_diff + y_diff
+
+def dist(a, b):
+    return sqrt((a.x - b.x)**2 + (a.y - b.y)**2)
+
 start, goal = {"x": 0, "y":0}, {"x": 0, "y":0}
 
 board_matrix = []
@@ -45,9 +54,9 @@ class Node:
             "west": None,
             "east": None
         }
-        self.f = 0
-        self.g = 0
-        self.h = 0
+        self.f = 99999
+        self.g = 99999
+        self.h = 99999
         self.Type = Type
         self.prev = None
         self.isPath = False
@@ -103,13 +112,15 @@ def createBoard(board_matrix):
 
     for lines in node_matrix:
         for node in lines:
-            
-            node.neighbors = {
-                "north": node_matrix[node.x][node.y-1] if 1 < node.y else None,
-                "south": node_matrix[node.x][node.y+1] if len(node_matrix[node.x]) > node.y+1 else None,
-                "west":  node_matrix[node.x-1][node.y] if 1 < node.x else None,
-                "east": node_matrix[node.x+1][node.y] if len(node_matrix) > node.x+1 else None
-            }
+            node.neighbors = {}
+            if 1 < node.y:
+                node.neighbors["north"] = node_matrix[node.x][node.y-1]
+            if len(node_matrix[node.x]) > node.y+1:
+                node.neighbors["south"] = node_matrix[node.x][node.y+1]
+            if 1 < node.x:
+                node.neighbors["west"] = node_matrix[node.x-1][node.y]
+            if len(node_matrix) > node.x+1:
+                node.neighbors["east"] = node_matrix[node.x+1][node.y]
 
     return node_matrix
 
@@ -123,15 +134,15 @@ def printBoard(board):
     for line in np.transpose(board):
         for node in line:
             if node.isPath:
-                print("{:<4}".format("#"), end="")
+                print("{:<4}".format("🛣"), end="")
             elif node.Type.value == -2:
-                print("{:<4}".format("🔜"), end="")
+                print("{:<4}".format("🚩"), end="")
             elif node.Type.value == -3:
-                print("{:<4}".format("🔚"), end="")
+                print("{:<4}".format("🏁"), end="")
             elif node.Type.value == -1:
-                print("{:<4}".format("■"), end="")
+                print("{:<4}".format("🚧"), end="")
             elif node.Type.value == 0:
-                print("{:<4}".format("□"), end="")
+                print("{:<4}".format("o"), end="")
             else:
                 print(node, end="")
         print("")
@@ -141,43 +152,43 @@ board = createBoard(board_matrix)
 
 start_node = board[start["x"]][start["y"]]
 goal_node = board[goal["x"]][goal["y"]]
+start_node.f = heuristic(start_node, goal_node)
 
 
-def heuristic(a, b):
-    return sqrt((a.x - b.x)**2 + (a.y - b.y)**2)
 
-def A_star(start_node, goal_node, board):
+def A_star(start_node, goal_node):
     openSet = [start_node]
     closeSet = []
     while len(openSet) is not 0:
+        openSet.sort(key=lambda node : node.f, reverse=True)
         current = openSet.pop()
         closeSet.append(current)
 
+        # Done!
         if current == goal_node:
             path = "end"
-            node = goal_node
+            node = goal_node.prev
             while node.prev is not None:
                 node.isPath=True
                 node = node.prev
 
-            return "DONE!" +"\n"+printBoard(board) # return path
+            return "DONE!" + "\n" + printBoard(board)
             
+        
         for neighbor in current.neighbors:
             neighbor = current.neighbors[neighbor]
-            
-            if neighbor is not None and neighbor not in closeSet and neighbor.Type.value != -1:
-                tempG = current.g + 1
-                if neighbor in openSet:
-                    if tempG < neighbor.g:
-                        neighbor.g = tempG
-                else:
-                    neighbor.g = tempG
-                    openSet.append(neighbor)
-                neighbor.h = heuristic(neighbor, goal_node)
-                neighbor.f = neighbor.g + neighbor.h
-                neighbor.prev = current
-        openSet.sort(key=lambda node : node.f)
-    return "No solution!"
+            tempG = current.g + dist(current, neighbor)
+            if neighbor in closeSet:
+                continue
+            if neighbor not in openSet and neighbor.Type.value != -1:
+                openSet.append(neighbor)
+            elif tempG >= neighbor.g:
+                continue
+                
+            neighbor.prev = current
+            neighbor.h = heuristic(neighbor, goal_node)
+            neighbor.g = tempG
+            neighbor.f = neighbor.g + neighbor.h
+    return printBoard(board)
 
-printBoard(board)
-print(A_star(start_node, goal_node, board))
+print(A_star(start_node, goal_node))
