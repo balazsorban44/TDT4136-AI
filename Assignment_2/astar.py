@@ -1,7 +1,8 @@
 from enum import Enum
+from os import system
 from sys import argv
 import numpy as np
-
+from math import sqrt
 
 start, goal = {"x": 0, "y":0}, {"x": 0, "y":0}
 
@@ -44,13 +45,18 @@ class Node:
             "west": None,
             "east": None
         }
+        self.f = 0
+        self.g = 0
+        self.h = 0
         self.Type = Type
+        self.prev = None
+        self.isPath = False
+
     def __str__(self):
         return "{:<4}".format(str(self.Type.value))
 
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
-
 
 def findType(element):
     if element == ".":
@@ -111,9 +117,23 @@ def createBoard(board_matrix):
 
 
 def printBoard(board):
+    for x in range(0, len(board)):
+        print("{:<4}".format(x), end="")
+    print("\n")
     for line in np.transpose(board):
         for node in line:
-            print(node, end="")
+            if node.isPath:
+                print("{:<4}".format("#"), end="")
+            elif node.Type.value == -2:
+                print("{:<4}".format("🔜"), end="")
+            elif node.Type.value == -3:
+                print("{:<4}".format("🔚"), end="")
+            elif node.Type.value == -1:
+                print("{:<4}".format("■"), end="")
+            elif node.Type.value == 0:
+                print("{:<4}".format("□"), end="")
+            else:
+                print(node, end="")
         print("")
     return ""
 
@@ -123,13 +143,41 @@ start_node = board[start["x"]][start["y"]]
 goal_node = board[goal["x"]][goal["y"]]
 
 
+def heuristic(a, b):
+    return sqrt((a.x - b.x)**2 + (a.y - b.y)**2)
+
 def A_star(start_node, goal_node, board):
     openSet = [start_node]
     closeSet = []
     while len(openSet) is not 0:
         current = openSet.pop()
+        closeSet.append(current)
+
         if current == goal_node:
-            return "DONE!" # return path
+            path = "end"
+            node = goal_node
+            while node.prev is not None:
+                node.isPath=True
+                node = node.prev
 
+            return "DONE!" +"\n"+printBoard(board) # return path
+            
+        for neighbor in current.neighbors:
+            neighbor = current.neighbors[neighbor]
+            
+            if neighbor is not None and neighbor not in closeSet and neighbor.Type.value != -1:
+                tempG = current.g + 1
+                if neighbor in openSet:
+                    if tempG < neighbor.g:
+                        neighbor.g = tempG
+                else:
+                    neighbor.g = tempG
+                    openSet.append(neighbor)
+                neighbor.h = heuristic(neighbor, goal_node)
+                neighbor.f = neighbor.g + neighbor.h
+                neighbor.prev = current
+        openSet.sort(key=lambda node : node.f)
+    return "No solution!"
 
-A_star(start_node, goal_node, board)
+printBoard(board)
+print(A_star(start_node, goal_node, board))
