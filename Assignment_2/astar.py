@@ -3,6 +3,7 @@ from os import system
 from sys import argv
 import numpy as np
 from math import sqrt, inf
+import time
 
 # Intalize the Matrix!
 board_matrix = []
@@ -191,6 +192,10 @@ goal_node = board[goal["x"]][goal["y"]]
 start_node.f = heuristic(start_node, goal_node)
 
 
+cost = False
+dijkstra = False
+bfs = False
+
 # Choose mode with the --mode or -m flags.
 # Possible values are nothing, with cost, or dijkstra
 if "--mode" in argv or "-m" in argv:
@@ -200,11 +205,6 @@ if "--mode" in argv or "-m" in argv:
         bfs = True
     elif "dijkstra" in argv:
         dijkstra = True
-
-
-cost = False
-dijkstra = False
-bfs = False
 
 
 # A* per se
@@ -277,7 +277,7 @@ def A_star(start_node, goal_node):
             neighbor.prev = current
             # Update heurisitc, not needed to save it, but nice to have
             neighbor.h = heuristic(neighbor, goal_node)
-            # Save the temp gScore as the new 
+            # Save the temp gScore as the new
             neighbor.g = tempG
             # Calculate the fScore and save it.
             if cost:
@@ -293,6 +293,18 @@ def A_star(start_node, goal_node):
         return printBoard(board)
 
 
-print(board[2][2].type.name)
+#A_star(start_node, goal_node)
+
+start_time = time.time()
+cost = True
 A_star(start_node, goal_node)
+print("Cost --- %s seconds ---" % (time.time() - start_time))
+
+print("")
+
+start_time = time.time()
+dijkstra = True
+cost = False
+A_star(start_node, goal_node)
+print("Dijkstra --- %s seconds ---" % (time.time() - start_time))
 
