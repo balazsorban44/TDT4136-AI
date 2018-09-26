@@ -163,23 +163,23 @@ def printBoard(board):
                 printBlock("👠")
             elif node.isChecked:
                 printBlock("❔")
-            elif node.type.value == -3:
+            elif node.type.name == "end":
                 printBlock("🏁")
-            elif node.type.value == -2:
+            elif node.type.name == "start":
                 printBlock("🚩")
-            elif node.type.value == -1:
+            elif node.type.name == "obstacle":
                 printBlock("🚧")
-            elif node.type.value == 100:
+            elif node.type.name == "water":
                 printBlock("🌊")
-            elif node.type.value == 50:
+            elif node.type.name == "mountain":
                 printBlock("⛰")
-            elif node.type.value == 10:
+            elif node.type.name == "forest":
                 printBlock("🌳")
-            elif node.type.value == 5:
+            elif node.type.name == "grassland":
                 printBlock("🌱")
-            elif node.type.value == 1:
+            elif node.type.name == "road":
                 printBlock("🛤")
-            elif node.type.value == 0:
+            elif node.type.name == "free":
                 printBlock("o")
             else:
                 print(node.type.value)
@@ -199,17 +199,6 @@ goal_node = board[goal["x"]][goal["y"]]
 
 # Must intialize the first heuristics between the start and end node
 start_node.f = heuristic(start_node, goal_node)
-
-
-def get_lowest_g_node(input_list):
-    # Sorting for dijkstra.
-    cur_min = None
-    cur_min_g = 2**10000
-    for node in input_list:
-        if node.g < cur_min_g:
-            cur_min_g = node.g
-            cur_min = node
-    return cur_min
 
 
 # A* per se
@@ -297,6 +286,6 @@ def A_star(start_node, goal_node):
 
 
 
-
+print(board[2][2].type.name)
 A_star(start_node, goal_node)
 
