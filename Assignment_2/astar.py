@@ -2,20 +2,26 @@ from enum import Enum
 from os import system
 from sys import argv
 import numpy as np
-from math import sqrt
+from math import sqrt, inf
 
-
+# Heurisitc calulator Manhattan
 def heuristic(a, b):
     x_diff = abs(a.x - b.x)
     y_diff = abs(a.y - b.y)
     return x_diff + y_diff
 
-def dist(a, b):
-    return sqrt((a.x - b.x)**2 + (a.y - b.y)**2)
+
+# Prettify block
+def printBlock(emoji):
+    print("{:<4}".format(emoji), end="")
+
 
 start, goal = {"x": 0, "y":0}, {"x": 0, "y":0}
 
+# Intalize the Matrix!
 board_matrix = []
+
+# Add source file with -s or --source flags and transform it into a 2D array
 if argv[1] == "--source" or argv[1] == "-s":
     file = open(argv[2])
     for line in file:
@@ -29,8 +35,10 @@ if argv[1] == "--source" or argv[1] == "-s":
 else:
     print("Please define the source file with the --source or -s flag")
 
+# Petter make the matrix with the red pill, Balazs want it with the blue so we flip it. First column board[x] is horizontal and board[1][x] is not vertical now.
 board_matrix = np.transpose(board_matrix)
 
+# Defined Type and their weights
 class Type(Enum):
     water = 100
     mountain = 50
@@ -44,29 +52,32 @@ class Type(Enum):
     error = -10
 
 
+# Node class containing the coordinates, its type, 
+# if the Node was visited, or if it is part of the final path.
+# Also fScore, gScore, hScore
 class Node:
     def __init__(self, x, y, Type):
         self.x = x
         self.y = y
-        self.neighbors = {
-            "north": None,
-            "south": None,
-            "west": None,
-            "east": None
-        }
-        self.f = 99999
-        self.g = 99999
-        self.h = 99999
-        self.Type = Type
+        self.neighbors = {}
+        # 2**10000 represents Infinity
+        self.f = 2**10000
+        self.g = 2**10000
+        self.h = 2**10000
+        self.type = Type
         self.prev = None
         self.isPath = False
+        self.isChecked = False
 
+    # Make it so that you can print a node
     def __str__(self):
-        return "{:<4}".format(str(self.Type.value))
-
+        return printBlock(str(self.type.value))
+        
+    # Make it so that you can compare two nodes
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
 
+# Maps every character from txt to their Type
 def findType(element):
     if element == ".":
         return Type.free
@@ -89,7 +100,7 @@ def findType(element):
     else:
         return Type.error
 
-
+# Reads everyting in the first Matrix, and convert it into nodes for easy calls
 def createBoard(board_matrix):
     x = -1
     y = -1
@@ -113,11 +124,11 @@ def createBoard(board_matrix):
     for lines in node_matrix:
         for node in lines:
             node.neighbors = {}
-            if 1 < node.y:
+            if 1 <= node.y:
                 node.neighbors["north"] = node_matrix[node.x][node.y-1]
             if len(node_matrix[node.x]) > node.y+1:
                 node.neighbors["south"] = node_matrix[node.x][node.y+1]
-            if 1 < node.x:
+            if 1 <= node.x:
                 node.neighbors["west"] = node_matrix[node.x-1][node.y]
             if len(node_matrix) > node.x+1:
                 node.neighbors["east"] = node_matrix[node.x+1][node.y]
@@ -125,70 +136,105 @@ def createBoard(board_matrix):
     return node_matrix
 
 
-
-
+# Custom print for the board so we can make pretty rapport + emojies
 def printBoard(board):
+    printBlock("")
     for x in range(0, len(board)):
-        print("{:<4}".format(x), end="")
+        printBlock(x)
     print("\n")
+    y = 0
     for line in np.transpose(board):
+        printBlock(str(y))
         for node in line:
             if node.isPath:
-                print("{:<4}".format("🛣"), end="")
-            elif node.Type.value == -2:
-                print("{:<4}".format("🚩"), end="")
-            elif node.Type.value == -3:
-                print("{:<4}".format("🏁"), end="")
-            elif node.Type.value == -1:
-                print("{:<4}".format("🚧"), end="")
-            elif node.Type.value == 0:
-                print("{:<4}".format("o"), end="")
+                printBlock("🛣")
+            elif node.isChecked:
+                printBlock("❔")
+            elif node.type.value == -2:
+                printBlock("🚩")
+            elif node.type.value == -3:
+                printBlock("🏁")
+            elif node.type.value == -1:
+                printBlock("🚧")
+            elif node.type.value == 0:
+                printBlock("o")
             else:
-                print(node, end="")
+                printBlock(node)
         print("")
+        y+=1
     return ""
 
+# Saves the node_Matrix_Board as a global function
 board = createBoard(board_matrix)
 
+# Saves the start_node as a global node
 start_node = board[start["x"]][start["y"]]
+
+# Saves the goal_node as a global node
 goal_node = board[goal["x"]][goal["y"]]
+
+# Must intelize the first heuristics between the start and end node
 start_node.f = heuristic(start_node, goal_node)
 
 
-
-def A_star(start_node, goal_node):
+# A* per se
+def A_star(start_node, goal_node, cost=False):
+    
+    # Start with the start node in the openSet        
     openSet = [start_node]
+    # Intelize the closeSet 
     closeSet = []
+
+    # Run as long we have something in the openSet to check
     while len(openSet) is not 0:
+        # Sorts the openSet so we always have the node with lowest fscore first so pop works
         openSet.sort(key=lambda node : node.f, reverse=True)
         current = openSet.pop()
         closeSet.append(current)
-
-        # Done!
+        # The A* algorithm reached the 🏁
         if current == goal_node:
             path = "end"
             node = goal_node.prev
             while node.prev is not None:
-                node.isPath=True
+                node.isPath = True
                 node = node.prev
 
-            return "DONE!" + "\n" + printBoard(board)
-            
+            print("DONE!\n")
+            return  printBoard(board)
+
         
+        # Find every friendly neighbor for this node
         for neighbor in current.neighbors:
             neighbor = current.neighbors[neighbor]
-            tempG = current.g + dist(current, neighbor)
+            tempG = current.g + heuristic(current, neighbor)
+            # If the neighbor is allready considered dont do it again
             if neighbor in closeSet:
                 continue
-            if neighbor not in openSet and neighbor.Type.value != -1:
+            # If not to it and only if this is not a wall!
+            if neighbor not in openSet and neighbor.type.value != -1:
                 openSet.append(neighbor)
             elif tempG >= neighbor.g:
                 continue
-                
+            # Saves the path we go
             neighbor.prev = current
+            # Update heurisitc, not needed to save it, but nice to have
             neighbor.h = heuristic(neighbor, goal_node)
+            # Saves the temp gScore
             neighbor.g = tempG
-            neighbor.f = neighbor.g + neighbor.h
-    return printBoard(board)
+            # Calculate the fScore and save it.
+            if cost:                            
+                neighbor.f = neighbor.g + neighbor.h + neighbor.type.value
+            else:
+                neighbor.f = neighbor.g + neighbor.h
+                                
+    # The A* algorithm did not find a solution from 🚩 to 🏁
+    else:
+        for node in closeSet:
+            node.isChecked = True
 
-print(A_star(start_node, goal_node))
+        print("No solution on this board! '❔' means the area was checked")
+        return printBoard(board)
+
+
+# Call A*
+A_star(start_node, goal_node)
