@@ -4,25 +4,8 @@ from sys import argv
 import numpy as np
 from math import sqrt, inf
 
-# Heurisitc calulator Manhattan
-def heuristic(a, b):
-    x_diff = abs(a.x - b.x)
-    y_diff = abs(a.y - b.y)
-    return x_diff + y_diff
-
-
-# Prettify block
-def printBlock(emoji):
-    print("{:<4}".format(emoji), end="")
-
-
-start, goal = {"x": 0, "y":0}, {"x": 0, "y":0}
-
 # Intalize the Matrix!
 board_matrix = []
-cost = False
-dijkstra = False
-bfs = False
 
 # Add source file with -s or --source flags and transform it into a 2D array
 if  "--source" in argv or "-s" in argv:
@@ -38,15 +21,6 @@ if  "--source" in argv or "-s" in argv:
 else:
     print("Please define the source file with the --source or -s flag")
 
-# Choose mode with the --mode or -m flags.
-# Possible values are nothing, with cost, or dijkstra
-if "--mode" in argv or "-m" in argv:
-    if "cost" in argv:
-        cost = True
-    if "bfs" in argv:
-        bfs = True
-    elif "dijkstra" in argv:
-        dijkstra = True
 
 # Petter make the matrix with the red pill, Balazs want it with the blue so we flip it. First column board[x] is horizontal and board[1][x] is not vertical now.
 board_matrix = np.transpose(board_matrix)
@@ -113,6 +87,8 @@ def findType(element):
     else:
         return Type.error
 
+start, goal = {"x": 0, "y":0}, {"x": 0, "y":0}
+
 # Reads everyting in the first Matrix, and convert it into nodes for easy calls
 def createBoard(board_matrix):
     x = -1
@@ -147,6 +123,10 @@ def createBoard(board_matrix):
                 node.neighbors["east"] = node_matrix[node.x+1][node.y]
 
     return node_matrix
+
+# Prettify block
+def printBlock(emoji):
+    print("{:<4}".format(emoji), end="")
 
 
 # Custom print for the board so we can make pretty rapport + emojies
@@ -191,14 +171,40 @@ def printBoard(board):
 # Saves the node_Matrix_Board as a global function
 board = createBoard(board_matrix)
 
+
+# Heurisitc calulator Manhattan
+def heuristic(a, b):
+    x_diff = abs(a.x - b.x)
+    y_diff = abs(a.y - b.y)
+    return x_diff + y_diff
+
+
 # Saves the start_node as a global node
 start_node = board[start["x"]][start["y"]]
+
 
 # Saves the goal_node as a global node
 goal_node = board[goal["x"]][goal["y"]]
 
+
 # Must intialize the first heuristics between the start and end node
 start_node.f = heuristic(start_node, goal_node)
+
+
+# Choose mode with the --mode or -m flags.
+# Possible values are nothing, with cost, or dijkstra
+if "--mode" in argv or "-m" in argv:
+    if "cost" in argv:
+        cost = True
+    if "bfs" in argv:
+        bfs = True
+    elif "dijkstra" in argv:
+        dijkstra = True
+
+
+cost = False
+dijkstra = False
+bfs = False
 
 
 # A* per se
@@ -211,6 +217,7 @@ def A_star(start_node, goal_node):
 
     # Run as long we have something in the openSet to check
     while len(openSet) is not 0:
+
         # Sorts the openSet so we always have the node with lowest fscore first so pop works
         if cost:
             openSet.sort(key=lambda node : node.f, reverse=True)
@@ -224,11 +231,12 @@ def A_star(start_node, goal_node):
             openSet.sort(key=lambda node : node.f, reverse=True)
             current = openSet.pop()
         closeSet.append(current)
+
         # The A* algorithm reached the 🏁
         if current == goal_node:
             path = "end"
             node = goal_node.prev
-            # Uncomment to show checked nodes
+            # Comment out to not show checked nodes
             for node in closeSet:
                 node.isChecked = True
             pathCost = 0
@@ -245,28 +253,31 @@ def A_star(start_node, goal_node):
         for neighbor in current.neighbors:
             neighbor = current.neighbors[neighbor]
 
+            # If we care about node cost or not
             if cost or dijkstra:
                 tempG = current.g + neighbor.type.value
-
             else:
                 tempG = current.g
                 neighbor.f = neighbor.g
+
             # If the neighbor is already considered don't do it again
             if neighbor in closeSet:
                 continue
+
             # If not, do it and only if this is not a wall!
             if neighbor not in openSet and neighbor.type.value != -1:
                 if bfs:
                     openSet.insert(0, neighbor)
                 else:
                     openSet.append(neighbor)
+            # If the old g is better dont change now!
             elif tempG >= neighbor.g:
                 continue
-            # Save the path we go
+            # Save the path we go so we can go back sometime
             neighbor.prev = current
             # Update heurisitc, not needed to save it, but nice to have
             neighbor.h = heuristic(neighbor, goal_node)
-            # Save the temp gScore
+            # Save the temp gScore as the new 
             neighbor.g = tempG
             # Calculate the fScore and save it.
             if cost:
@@ -278,12 +289,8 @@ def A_star(start_node, goal_node):
     else:
         for node in closeSet:
             node.isChecked = True
-
         print("No solution on this board! '❔' means the area was checked")
         return printBoard(board)
-
-
-
 
 
 print(board[2][2].type.name)
