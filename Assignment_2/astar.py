@@ -33,7 +33,7 @@ Available flags are:
     --help, -h - Show help (Hint: you are here 😉 )
     --source, -s - Specify the source file for the input
     --show-checked, -C - Show the checked blocks
-    --show-board, -B - show the original board
+    --show-board, -B - Show the original board
     --mode, -m - Specify the algorithm to run. Possible values are:
         Default: If mode is omitted, A* without cost is run.
         bfs - Run Best-First Search
