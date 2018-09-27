@@ -307,7 +307,7 @@ def A_star(start_node, goal_node):
                 pathCost += node.type.value
                 node = node.prev
 
-            print(bcolors.OKGREEN + "DONE!"+ bcolors.ENDC + " Cost was: "+ str(pathCost) + " and the path is:\n")
+            print("\n" + bcolors.OKGREEN + "DONE!"+ bcolors.ENDC + " Cost was: "+ str(pathCost) + " and the path is:")
             return  printBoard(board)
 
 
