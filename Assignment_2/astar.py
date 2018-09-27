@@ -24,6 +24,7 @@ dijkstra = False
 bfs = False
 showChecked = False
 showHelp = False
+showBoard = False
 
 if "--help" in argv or "-h" in argv or len(argv) <= 1:
     print(bcolors.OKBLUE + "TDT4136 AI Assignment 2 © by Petter Rein & Balázs Orbán @ NTNU - 2018" + bcolors.ENDC)
@@ -32,12 +33,13 @@ Available flags are:
     --help, -h - Show help (Hint: you are here 😉 )
     --source, -s - Specify the source file for the input
     --show-checked, -C - Show the checked blocks
+    --show-board, -B - show the original board
     --mode, -m - Specify the algorithm to run. Possible values are:
         Default: If mode is omitted, A* without cost is run.
         bfs - Run Best-First Search
         dijkstra - Run Dijkstra's algorithm
         cost - Run A* with cost
-        
+
 Block types:
     representation - name - cost to pass
     🏁  - goal - Ø
@@ -71,6 +73,8 @@ if not showHelp:
     else:
         print(bcolors.FAIL+"Please define the source file with the --source or -s flag"+bcolors.ENDC)
 
+    if "--show-board" in argv or "-B" in argv:
+        showBoard = True
     if "--mode" in argv or "-m" in argv:
         if "cost" in argv:
             cost = True
@@ -352,6 +356,9 @@ def A_star(start_node, goal_node):
 
 
 #A_star(start_node, goal_node)
+
+if showBoard:
+    printBoard(board)
 
 if not showHelp:
     start_time = time.time()
