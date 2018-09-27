@@ -358,6 +358,7 @@ def A_star(start_node, goal_node):
 #A_star(start_node, goal_node)
 
 if showBoard:
+    print("\nThe original board:")
     printBoard(board)
 
 if not showHelp:
