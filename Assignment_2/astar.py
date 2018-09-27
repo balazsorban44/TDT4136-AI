@@ -2,25 +2,97 @@ from enum import Enum
 from os import system
 from sys import argv
 import numpy as np
-from math import sqrt, inf
+from math import sqrt
 import time
+
+
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 # Intalize the Matrix!
 board_matrix = []
 
-# Add source file with -s or --source flags and transform it into a 2D array
-if  "--source" in argv or "-s" in argv:
-    file = open(argv[2])
-    for line in file:
-        row = []
-        for x in line:
+cost = False
+dijkstra = False
+bfs = False
+showChecked = False
+showHelp = False
 
-            if x != "\n":
-                row.append(x)
-        board_matrix.append(row)
-    file.close()
-else:
-    print("Please define the source file with the --source or -s flag")
+if "--help" in argv or "-h" in argv or len(argv) <= 1:
+    print(bcolors.OKBLUE + "TDT4136 AI Assignment 2 © by Petter Rein & Balázs Orbán @ NTNU - 2018" + bcolors.ENDC)
+    print("""
+Available flags are:
+    --help, -h - Show help (Hint: you are here 😉 )
+    --source, -s - Specify the source file for the input
+    --mode, -m - Specify the algorithm to run. Possible values are:
+
+        Default: If mode is omitted, A* without cost is run.
+        bfs - Run Best-First Search
+        dijkstra - Run Dijkstra's algorithm
+        cost - Run A* with cost
+Block types:
+    representation - name - cost to pass
+    🏁  - goal - Ø
+    🚩  - start - Ø
+    👠  - found path - Ø
+    🛤  - road - 1
+    🌱  - grassland - 5 
+    🌳  - forest - 10
+    ⛰  - mountain - 50
+    🌊  - water - 100
+    ❔  - checked - Ø
+    🚧  - obstacle - not passable
+    o  - free - Ø
+
+    Ø - There is no point in measuring the cost to pass
+    """)
+    showHelp = True
+
+if not showHelp:
+
+    # Add source file with -s or --source flags and transform it into a 2D array
+    if  "--source" in argv or "-s" in argv:
+        file = open(argv[2])
+        for line in file:
+            row = []
+            for x in line:
+
+                if x != "\n":
+                    row.append(x)
+            board_matrix.append(row)
+        file.close()
+    else:
+        print(bcolors.FAIL+"Please define the source file with the --source or -s flag"+bcolors.ENDC)
+
+    if "--mode" in argv or "-m" in argv:
+        if "cost" in argv:
+            cost = True
+            print("Running A* with cost")
+        if "bfs" in argv:
+            bfs = True
+            print("Running Best-First Search")
+        elif "dijkstra" in argv:
+            print("Running Dijkstra's alogirthm")
+            dijkstra = True
+    else:
+        print("""
+Running A* without cost
+To try different modes, use the --mode or -m flags.:
+    bfs - Run Best-First Search
+    dijkstra - Run Dijkstra's algorithm
+    cost - Run A* with cost
+""")
+
+    if "--show-checked" in argv or "-C" in argv:
+        print("showing checked blocks")
+        showChecked = True
 
 
 # Petter make the matrix with the red pill, Balazs want it with the blue so we flip it. First column board[x] is horizontal and board[1][x] is not vertical now.
@@ -34,7 +106,6 @@ class Type(Enum):
     grassland = 5
     road = 1
     obstacle = -1
-    free = 0
     start = -2
     goal = -3
     error = -10
@@ -67,11 +138,9 @@ class Node:
 
 # Maps every character from txt to their Type
 def findType(element):
-    if element == ".":
-        return Type.free
-    elif element == "w":
+    if element == "w":
         return Type.water
-    elif element == "r":
+    elif element == "r" or element == ".":
         return Type.road
     elif element == "m":
         return Type.mountain
@@ -144,7 +213,7 @@ def printBoard(board):
                 printBlock("👠")
             elif node.isChecked:
                 printBlock("❔")
-            elif node.type.name == "end":
+            elif node.type.name == "goal":
                 printBlock("🏁")
             elif node.type.name == "start":
                 printBlock("🚩")
@@ -163,7 +232,6 @@ def printBoard(board):
             elif node.type.name == "free":
                 printBlock("o")
             else:
-                print(node.type.value)
                 printBlock(node)
         print("")
         y+=1
@@ -180,35 +248,22 @@ def heuristic(a, b):
     return x_diff + y_diff
 
 
-# Saves the start_node as a global node
-start_node = board[start["x"]][start["y"]]
+
+if not showHelp:
+    # Saves the start_node as a global node
+    start_node = board[start["x"]][start["y"]]
 
 
-# Saves the goal_node as a global node
-goal_node = board[goal["x"]][goal["y"]]
-
-
-# Must intialize the first heuristics between the start and end node
-start_node.f = heuristic(start_node, goal_node)
-
-
-cost = False
-dijkstra = False
-bfs = False
-
-# Choose mode with the --mode or -m flags.
-# Possible values are nothing, with cost, or dijkstra
-if "--mode" in argv or "-m" in argv:
-    if "cost" in argv:
-        cost = True
-    if "bfs" in argv:
-        bfs = True
-    elif "dijkstra" in argv:
-        dijkstra = True
-
+    # Saves the goal_node as a global node
+    goal_node = board[goal["x"]][goal["y"]]
 
 # A* per se
 def A_star(start_node, goal_node):
+
+
+
+    # Must intialize the first heuristics between the start and end node
+    start_node.f = heuristic(start_node, goal_node)
 
     # Start with the start node in the openSet
     openSet = [start_node]
@@ -236,16 +291,19 @@ def A_star(start_node, goal_node):
         if current == goal_node:
             path = "end"
             node = goal_node.prev
-            # Comment out to not show checked nodes
-            for node in closeSet:
-                node.isChecked = True
+            # use --checked or -c flag
+
+            if showChecked:
+                for node in closeSet:
+                    node.isChecked = True
+
             pathCost = 0
             while node.prev is not None:
                 node.isPath = True
                 pathCost += node.type.value
                 node = node.prev
 
-            print("DONE! Cost was: "+ str(pathCost) + "\n")
+            print(bcolors.OKGREEN + "DONE!"+ bcolors.ENDC + " Cost was: "+ str(pathCost) + " and the path is:\n")
             return  printBoard(board)
 
 
@@ -295,16 +353,7 @@ def A_star(start_node, goal_node):
 
 #A_star(start_node, goal_node)
 
-start_time = time.time()
-cost = True
-A_star(start_node, goal_node)
-print("Cost --- %s seconds ---" % (time.time() - start_time))
-
-print("")
-
-start_time = time.time()
-dijkstra = True
-cost = False
-A_star(start_node, goal_node)
-print("Dijkstra --- %s seconds ---" % (time.time() - start_time))
-
+if not showHelp:
+    start_time = time.time()
+    A_star(start_node, goal_node)
+    print("It took %s seconds" % (time.time() - start_time))
