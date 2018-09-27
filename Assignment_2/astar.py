@@ -46,7 +46,7 @@ Block types:
     🚩  - start - Ø
     👠  - found path - Ø
     🛤  - road - 1
-    🌱  - grassland - 5 
+    🌱  - grassland - 5
     🌳  - forest - 10
     ⛰  - mountain - 50
     🌊  - water - 100
