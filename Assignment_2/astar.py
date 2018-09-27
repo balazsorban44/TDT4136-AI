@@ -49,7 +49,6 @@ Block types:
     🌊  - water - 100
     ❔  - checked - Ø
     🚧  - obstacle - not passable
-    o  - free - Ø
 
     Ø - There is no point in measuring the cost to pass
     """)
