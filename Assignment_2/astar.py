@@ -31,6 +31,7 @@ if "--help" in argv or "-h" in argv or len(argv) <= 1:
 Available flags are:
     --help, -h - Show help (Hint: you are here 😉 )
     --source, -s - Specify the source file for the input
+    --show-checked, -C - Show the checked blocks
     --mode, -m - Specify the algorithm to run. Possible values are:
 
         Default: If mode is omitted, A* without cost is run.
