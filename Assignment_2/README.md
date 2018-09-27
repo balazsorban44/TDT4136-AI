@@ -1,4 +1,4 @@
-##TDT4136 AI Assignment 2 © by Petter Rein & Balázs Orbán @ NTNU - 2018
+## TDT4136 AI Assignment 2 © by Petter Rein & Balázs Orbán @ NTNU - 2018
 
 Available flags are:
 
