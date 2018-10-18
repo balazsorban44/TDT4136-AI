@@ -1,5 +1,7 @@
 ## TDT4136 AI Assignment 2 © by Petter Rein & Balázs Orbán @ NTNU - 2018
 
+![](https://github.com/balazsorban44/TDT4136-AI/blob/master/Assignment_2/part3.-board-2-1_astar.png?raw=true)
+
 Available flags are:
 
     --help, -h - Show help
