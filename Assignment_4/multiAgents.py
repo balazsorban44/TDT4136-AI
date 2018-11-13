@@ -106,6 +106,9 @@ class MultiAgentSearchAgent(Agent):
         self.evaluationFunction = util.lookup(evalFn, globals())
         self.depth = int(depth)
 
+
+# define pacman        
+PACMAN = 0
 class MinimaxAgent(MultiAgentSearchAgent):
     """
       Your minimax agent (question 2)
@@ -128,8 +131,56 @@ class MinimaxAgent(MultiAgentSearchAgent):
           gameState.getNumAgents():
             Returns the total number of agents in the game
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+
+        # Get pacman's legal moves of the current state 
+        moves = gameState.getLegalActions(PACMAN)
+        # Calculates all the possible next states for the possible moves
+        next_states = [gameState.generateSuccessor(PACMAN, move) for move in moves]
+        # Calculates the scores for every next state so we can choose the best
+        scores = [self.min(0, next_state, 1) for next_state in next_states]
+        # Find the index of the best score and find its corresponding move        
+        return moves[(scores.index(max(scores)))]
+    
+    def min(self, depth, state, ghost):
+      # Base check
+      if self.depth == depth or state.isWin() or state.isLose():
+        return self.evaluationFunction(state)
+      # Get all the legal moves that the ghost can do
+      moves = state.getLegalActions(ghost)
+      # Calculates all the possible next states 
+      # for the possible moves
+      next_states = [state.generateSuccessor(ghost, move) for move in moves]
+      
+      # If we still have some ghost to calculate moves and scores
+      # for do it otherwise switch to Pacman
+      if ghost >= state.getNumAgents() - 1:
+    	  scores = [self.max(depth + 1, next_state) for next_state in next_states]
+      else:
+    		scores = [self.min(depth, next_state, ghost + 1) for next_state in next_states]
+
+      # Return the lowest score. Observe! This 'min' is not a
+      # recursive call, but simply choosing the lowest
+      # possible number from scores.
+      return min(scores)      
+
+    def max(self, depth, state):
+      # Base check
+      if self.depth == depth or state.isWin() or state.isLose():
+        return self.evaluationFunction(state)
+        
+      # Get all the legal moves that Pacman can do
+      moves = state.getLegalActions(PACMAN)
+      # Calculates all the possible next states 
+      # for the possible moves
+      next_states = [state.generateSuccessor(PACMAN, move) for move in moves]
+      # Calculates the scores for every next state so we can choose the best
+      scores = [self.min(depth, next_state, 1) for next_state in next_states]
+
+      # Return the highest score. Observe! This 'max' is not a
+      # recursive call, but simply choosing the highest
+      # possible number from scores.
+      return max(scores)
+      
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
@@ -137,11 +188,91 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
     """
 
     def getAction(self, gameState):
-        """
-          Returns the minimax action using self.depth and self.evaluationFunction
-        """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+      """
+        Returns the minimax action using self.depth and self.evaluationFunction
+      """
+
+      # The main difference between this and the Minimax agent is that
+      # we don't generate all the next states, only those that actually
+      # have a chance to return a better score. The rest of the states
+      # are 'pruned'.
+
+      # Get pacman's legal moves of the current state
+      moves = gameState.getLegalActions(PACMAN)
+
+      # initialize values
+      alpha = float("-inf")
+      beta = float("inf")
+      current_score = float("-inf")
+      current_move = moves[0]
+
+      # For every move check if the score is better than the previous best
+      for move in moves:
+        next_state = gameState.generateSuccessor(PACMAN, move)
+        next_score = self.min(0, next_state, alpha, beta, 1)
+        # If better update
+        if next_score > current_score:
+          current_score = next_score
+          current_move = move
+        # If score better than beta return the move
+        if next_score > beta:
+          return current_move
+        # Update alpha
+        alpha = max(next_score, alpha)
+          
+      return current_move
+
+
+    def max(self, depth, state, alpha, beta):
+      # Base check
+      if self.depth == depth or state.isWin() or state.isLose():
+        return self.evaluationFunction(state)
+
+      # Get legal moves
+      moves = state.getLegalActions(PACMAN)
+      # initialize value
+      value = float("-inf")
+      
+      # For every move check if the score is better than the previous best
+      for move in moves:
+        next_state = state.generateSuccessor(PACMAN, move)
+        value = max(value, self.min(depth, next_state, alpha, beta, 1))
+        if value > beta:
+          return value
+
+        # Update alpha
+        alpha = max(value, alpha)
+
+
+      return value
+
+
+    def min(self, depth, state, alpha, beta, ghost):
+      # Base check
+      if self.depth == depth or state.isWin() or state.isLose():
+        return self.evaluationFunction(state)
+      # Get legal moves
+      moves = state.getLegalActions(ghost)
+      # initialize value
+      value = float("inf")
+
+      # For every move check if the score is better than the previous best
+      for move in moves:
+        next_state = state.generateSuccessor(ghost, move)
+        # For every move check if the score is better than the previous best
+        # for all ghosts. If you are done with the ghosts, change to Pacman
+        if ghost >= state.getNumAgents() - 1:
+          value = min(value, self.max(depth + 1, next_state, alpha, beta))
+        else:
+          value = min(value, self.min(depth, next_state, alpha, beta, ghost + 1))
+    
+        if value < alpha:
+          return value
+        # Update beta
+        beta = min(beta, value)
+
+      return value
+
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
