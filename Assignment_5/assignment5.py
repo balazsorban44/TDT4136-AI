@@ -1,8 +1,34 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 import copy
 import itertools
+from sys import argv
 
+
+error = False
+difficulty = ""
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
+print(bcolors.UNDERLINE + "\nTDT4136 AI Assignment 4 © by Petter Rein & Balázs Orbán @ NTNU - 2018" + bcolors.ENDC+"\n")
+
+if "--difficulty" not in argv and "-d" not in argv:
+    print(bcolors.FAIL + "Please define the difficulty by --difficulty {value} or -d {value} flags.\npossible values: easy, medium, hard, veryhard" + bcolors.ENDC)
+    error = True
+else:
+    if "-d" in argv:
+        difficulty = argv[argv.index("-d")+1]
+    else:
+        difficulty = argv[argv.index("--difficulty")+1]
 
 class CSP:
     def __init__(self):
@@ -227,20 +253,48 @@ def create_sudoku_csp(filename):
 
     return csp
 
-def print_sudoku_solution(solution):
+def print_sudoku_solution(csp):
     """Convert the representation of a Sudoku solution as returned from
     the method CSP.backtracking_search(), into a human readable
     representation.
     """
+    solution = csp.backtracking_search()
     for row in range(9):
         for col in range(9):
-            print solution['%d-%d' % (row, col)][0],
+            print print_emoji(solution['%d-%d' % (row, col)][0]),
             if col == 2 or col == 5:
                 print('|'),
         print
         if row == 2 or row == 5:
             print '------+-------+------'
 
+    print(bcolors.OKBLUE+"The number of times the backtrack function was called: " + str(csp.calls) + bcolors.ENDC)
+    print(bcolors.FAIL+"The number of times the backtrack function failed: " + str(csp.failures)+bcolors.ENDC)
 
-csp = create_sudoku_csp("./veryhard.txt")
-print_sudoku_solution(csp.backtracking_search())
+def print_emoji(digit):
+    if digit == "1":
+        return "1️⃣"
+    if digit == "2":
+        return "2⃣"
+    if digit == "3":
+        return "3⃣"
+    if digit == "4":
+        return "4⃣"
+    if digit == "5":
+        return "5⃣"
+    if digit == "6":
+        return "6️⃣"
+    if digit == "7":
+        return "7️⃣"
+    if digit == "8":
+        return "8️⃣"
+    if digit == "9":
+        return "9️⃣"
+    else:
+        return digit
+    
+
+
+if not error:
+    csp = create_sudoku_csp("./" + difficulty + ".txt")
+    print_sudoku_solution(csp)
